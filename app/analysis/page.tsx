@@ -4,10 +4,7 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Papa from "papaparse";
 
-// Import CSV dynamically using fetch (prevents hydration error)
 const csvPath = "/synthetic_calls_scenarios.csv";
-
-// Dynamically import Plotly
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
 
 export default function Analysis() {
@@ -61,77 +58,30 @@ export default function Analysis() {
             });
     }, []);
 
+    const charts = [
+        "Scenario Frequency",
+        "Call Length Distribution",
+        "Response Type Distribution",
+        "Top Responses"
+    ];
+
     const renderChart = () => {
         switch (selectedChart) {
             case "Scenario Frequency":
                 return (
-                    <Plot
-                        data={[{
-                            type: "bar",
-                            x: scenarios,
-                            y: scenarioCounts,
-                            marker: { color: ["#36A2EB", "#FF6384", "#FFCE56", "#4BC0C0"] },
-                        }]}
-                        layout={{
-                            title: "📈 Scenario Frequency",
-                            xaxis: { title: "Scenario Type" },
-                            yaxis: { title: "Count" },
-                            bargap: 0.3,
-                        }}
-                    />
+                    <Plot data={[{ type: "bar", x: scenarios, y: scenarioCounts, marker: { color: "#36A2EB" } }]} layout={{ title: "📈 Scenario Frequency", xaxis: { title: "Scenario Type" }, yaxis: { title: "Count" } }} />
                 );
             case "Call Length Distribution":
                 return (
-                    <Plot
-                        data={[
-                            {
-                                type: "bar",
-                                x: ["0-50s", "50-100s", "100-150s", "150-200s", "200-250s", "250+s"], // Binned ranges
-                                y: [0.12, 0.25, 0.20, 0.18, 0.15, 0.10], // Placeholder probabilities
-                                marker: { color: "#FF5733", opacity: 0.6 },
-                                name: "Call Length Histogram",
-                            },
-                        ]}
-                        layout={{
-                            title: "📞 Call Length Distribution with PDF",
-                            xaxis: { title: "Call Length (s)" },
-                            yaxis: { title: "Probability Density" },
-                            bargap: 0.05,
-                        }}
-                    />
+                    <Plot data={[{ type: "histogram", x: callLengths, marker: { color: "#FF5733" } }]} layout={{ title: "📞 Call Length Distribution", xaxis: { title: "Call Length (s)" }, yaxis: { title: "Frequency" } }} />
                 );
             case "Response Type Distribution":
                 return (
-                    <Plot
-                        data={[{
-                            type: "pie",
-                            labels: Object.keys(responseCounts),
-                            values: Object.values(responseCounts),
-                            textinfo: "label+percent",
-                            marker: { colors: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0"] },
-                        }]}
-                        layout={{ title: "🎭 Response Type Distribution" }}
-                    />
+                    <Plot data={[{ type: "pie", labels: Object.keys(responseCounts), values: Object.values(responseCounts), textinfo: "label+percent" }]} layout={{ title: "🎭 Response Type Distribution" }} />
                 );
             case "Top Responses":
                 return (
-                    <Plot
-                        data={[{
-                            type: "bar",
-                            orientation: "h",
-                            x: Object.values(responseCounts),
-                            y: Object.keys(responseCounts),
-                            marker: { color: "#4BC0C0" },
-                            text: Object.values(responseCounts).map(String),
-                            textposition: "outside",
-                        }]}
-                        layout={{
-                            title: "💬 Top Response Types",
-                            xaxis: { title: "Count" },
-                            yaxis: { title: "Response Type", automargin: true },
-                            margin: { l: 250 },
-                        }}
-                    />
+                    <Plot data={[{ type: "bar", orientation: "h", x: Object.values(responseCounts), y: Object.keys(responseCounts), marker: { color: "#4BC0C0" } }]} layout={{ title: "💬 Top Response Types", xaxis: { title: "Count" }, yaxis: { title: "Response Type" } }} />
                 );
             default:
                 return null;
@@ -139,32 +89,22 @@ export default function Analysis() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-8 space-y-10">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-8 space-y-6">
             <h1 className="text-3xl font-bold text-gray-800">📊 Phishing Scenario Analysis</h1>
-
-            {loading ? (
-                <p className="text-gray-500">Loading CSV data...</p>
-            ) : (
-                <>
-                    <div className="w-full max-w-4xl bg-white p-6 rounded-2xl shadow-lg">
-                        <h2 className="text-xl font-semibold text-gray-700 mb-4">Select Chart</h2>
-                        <select
-                            className="p-2 border rounded-lg"
-                            value={selectedChart}
-                            onChange={(e) => setSelectedChart(e.target.value)}
-                        >
-                            <option>Scenario Frequency</option>
-                            <option>Call Length Distribution</option>
-                            <option>Response Type Distribution</option>
-                            <option>Top Responses</option>
-                        </select>
-                    </div>
-
-                    <div className="w-full max-w-4xl bg-white p-6 rounded-2xl shadow-lg">
-                        {renderChart()}
-                    </div>
-                </>
-            )}
+            <div className="w-full max-w-4xl bg-white p-4 rounded-2xl shadow-lg flex justify-around">
+                {charts.map((chart) => (
+                    <button
+                        key={chart}
+                        onClick={() => setSelectedChart(chart)}
+                        className={`px-4 py-2 rounded-lg text-gray-700 font-semibold ${selectedChart === chart ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+                    >
+                        {chart}
+                    </button>
+                ))}
+            </div>
+            <div className="w-full max-w-4xl bg-white p-6 rounded-2xl shadow-lg">
+                {loading ? <p className="text-gray-500">Loading CSV data...</p> : renderChart()}
+            </div>
         </div>
     );
 }
