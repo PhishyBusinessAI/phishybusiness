@@ -13,6 +13,7 @@ import {
 } from "recharts";
 
 import StatsSection from "@/components/StatsSection";
+import Analysis from "@/components/Analysis";
 const data = [
   { year: "2019", value: 1.5 },
   { year: "2020", value: 2.1 },
@@ -23,6 +24,7 @@ const data = [
 export default function Home() {
   const [userName, setUserName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [agentID, setAgentID] = useState("agent_a5731a34565ef2b5c883c25add");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,13 +56,13 @@ export default function Home() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from_number: "+16509999723",
+            from_number: "+16509551950",
             to_number: phoneNumber,
-            override_agent_id: "agent_7a7a2fff71b3119b46a4afa692",
+            override_agent_id: agentID,
             retell_llm_dynamic_variables: {
-              user_name: userName,
+              name: userName,
             },
-            webhook_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhook`,
+            // webhook_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhook`,
           }),
         }
       );
@@ -135,6 +137,7 @@ export default function Home() {
               here to help protect your loved ones through education and
               awareness.
             </p>
+            {/* <Analysis callDetails={callDetails}/> */}
           </motion.div>
 
           <div className="grid lg:grid-cols-2 gap-12 items-start mb-16">
@@ -188,17 +191,19 @@ export default function Home() {
                     htmlFor="relationship"
                     className="block text-sm font-medium mb-2"
                   >
-                    Relationship to Person
+                    Scam Options
                   </label>
                   <select
-                    id="relationship"
+                    id="scamType"
+                    onChange={(e) => setAgentID(e.target.value)}
                     className="w-full px-4 py-3 rounded-lg border border-black focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200"
                   >
-                    <option value="">Select relationship</option>
-                    <option value="family">Family Member</option>
-                    <option value="friend">Friend</option>
-                    <option value="caregiver">Caregiver</option>
-                    <option value="other">Other</option>
+                    <option value="agent_a90a3d0b6f138a877d345e4e44">Select Scam</option>
+                    <option value="agent_a90a3d0b6f138a877d345e4e44">Social Security</option>
+                    <option value="agent_a5731a34565ef2b5c883c25add">Bank Account</option>
+                    {/* <option value="credit_card">Raffle Winner</option>
+                    <option value="credit_card">Charity</option>
+                    <option value="tech_support">Tech Support</option> */}
                   </select>
                 </div>
 
@@ -271,17 +276,12 @@ export default function Home() {
                   animate={{ opacity: 1 }}
                   className="p-6 rounded-2xl border border-gray-200 bg-white/50 backdrop-blur-sm shadow-xl"
                 >
-                  <h3 className="text-xl font-semibold mb-4">Call Analysis</h3>
-                  <div className="space-y-4">
-                    <pre className="text-sm overflow-auto bg-gray-50 p-4 rounded-lg">
-                      {JSON.stringify(callDetails, null, 2)}
-                    </pre>
-                  </div>
+                  <Analysis callDetails={callDetails}/>
                 </motion.div>
               )}
             </motion.div>
           </div>
-          <div className="h-[400px] p-6 rounded-xl border border-gray-200">
+          {/* <div className="h-[400px] p-6 rounded-xl border border-gray-200">
             <h3 className="text-xl font-semibold mb-4 text-center">
               Phone Scam Reports (Millions)
             </h3>
@@ -310,7 +310,7 @@ export default function Home() {
                 />
               </LineChart>
             </ResponsiveContainer>
-          </div>
+          </div> */}
 
           <section className="grid md:grid-cols-3 gap-8 mb-16"></section>
 

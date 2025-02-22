@@ -31,7 +31,7 @@ const StatCard = ({ title, value, icon, description }: StatCardProps) => {
         </div>
         <div className="text-2xl">{icon}</div>
       </div>
-      <p className="mt-3 text-sm text-gray-600">{description}</p>
+      <p className="mt-3 text-sm text-gray-600" style={{ whiteSpace: "pre-line" }}>{description}</p>
     </motion.div>
   );
 };

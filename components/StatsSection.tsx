@@ -18,24 +18,24 @@ const StatsSection = ({ showCards = true, showChart = true }: StatsSectionProps)
   return (
     <div className="space-y-8">
       {showCards && (
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-[.7rem]">
           <StatCard
             title="Annual Losses"
-            value="$3.9B"
+            value="> $1 Trillion"
             icon={<DollarSign className="animate-pulse" />}
-            description="Total losses to phone scams in 2023"
+            description="Total losses to phone scams in 2024 - Global Anti-Scam Alliance"
           />
           <StatCard
             title="Victims"
-            value="47%"
+            value="21%"
             icon={<Users className="animate-pulse" />}
-            description="Of seniors targeted by phone scams"
+            description="Americans That Fell For A Scam Call in 2023 - U.S. Spam and Scam Report"
           />
           <StatCard
-            title="Prevention"
-            value="$12B"
+            title="The Most Vulnerable"
+            value="$33,915"
             icon={<ShieldAlert className="animate-pulse" />}
-            description="Spent annually on scam prevention"
+            description="Average loss from victims 60+ years of age - FBI&apos;s IC3"
           />
         </div>
       )}
