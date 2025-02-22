@@ -149,71 +149,50 @@ export default function Analysis() {
 
             {/* Filters */}
             <div className="w-full max-w-4xl bg-white p-4 rounded-xl shadow-lg flex flex-col space-y-4">
-                <label className="block text-gray-700 font-semibold">Filter by Scenario:</label>
-                <Select
-                    options={scenarioOptions}
-                    isMulti
-                    value={scenarioOptions.filter(opt => selectedScenarios.includes(opt.value))}
-                    placeholder="Select scenarios..."
-                    onChange={(selected) => {
-                        const values = selected.map(opt => opt.value);
-                        setSelectedScenarios(values.includes("All") ? ["All"] : values);
-                    }}
-                    className="mt-2"
-                />
+                <div>
+                    <label className="block text-gray-700 font-semibold">Filter by Scenario:</label>
+                    <Select
+                        options={scenarioOptions}
+                        isMulti
+                        value={scenarioOptions.filter(opt => selectedScenarios.includes(opt.value))}
+                        placeholder="Select scenarios..."
+                        onChange={(selected) => {
+                            const values = selected.map(opt => opt.value);
+                            setSelectedScenarios(values.includes("All") ? ["All"] : values);
+                        }}
+                        className="mt-2"
+                    />
+                </div>
 
-                <label className="block text-gray-700 font-semibold">Filter by Name:</label>
-                <Select
-                    options={nameOptions}
-                    isMulti
-                    value={nameOptions.filter(opt => selectedNames.includes(opt.value))}
-                    placeholder="Select names..."
-                    onChange={(selected) => {
-                        const values = selected.map(opt => opt.value);
-                        setSelectedNames(values.includes("All") ? ["All"] : values);
-                    }}
-                    className="mt-2"
-                />
+                <div>
+                    <label className="block text-gray-700 font-semibold">Filter by Name:</label>
+                    <Select
+                        options={nameOptions}
+                        isMulti
+                        value={nameOptions.filter(opt => selectedNames.includes(opt.value))}
+                        placeholder="Select names..."
+                        onChange={(selected) => {
+                            const values = selected.map(opt => opt.value);
+                            setSelectedNames(values.includes("All") ? ["All"] : values);
+                        }}
+                        className="mt-2"
+                    />
+                </div>
 
-                <label className="block text-gray-700 font-semibold">Select Chart:</label>
-                <Select
-                    options={chartOptions}
-                    placeholder="Choose a chart..."
-                    onChange={(selected) => setSelectedChart(selected?.value || "Scenario Frequency")}
-                    className="mt-2"
-                />
+                <div>
+                    <label className="block text-gray-700 font-semibold">Select Chart:</label>
+                    <Select
+                        options={chartOptions}
+                        placeholder="Choose a chart..."
+                        onChange={(selected) => setSelectedChart(selected?.value || "Scenario Frequency")}
+                        className="mt-2"
+                    />
+                </div>
             </div>
 
-            {/* Graph */}
+            {/* Graph Display */}
             <div className="w-full max-w-4xl bg-white p-6 rounded-xl shadow-lg">
                 {loading ? <p className="text-gray-500">Loading CSV data...</p> : renderChart()}
-            </div>
-
-            {/* Table */}
-            <div className="w-full max-w-4xl bg-white p-6 rounded-xl shadow-lg">
-                <h2 className="text-lg font-semibold mb-2">📋 Filtered Data</h2>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white border border-gray-300 text-black">
-                        <thead>
-                        <tr className="bg-gray-200 text-black">
-                            <th className="border p-2">Name</th>
-                            <th className="border p-2">Scenario</th>
-                            <th className="border p-2">Call Length (s)</th>
-                            <th className="border p-2">Response</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {filteredData.map((row, index) => (
-                            <tr key={index} className="border text-black">
-                                <td className="border p-2">{row["Name"]}</td>
-                                <td className="border p-2">{row["Phishing Scenario"]}</td>
-                                <td className="border p-2">{row["Call Length (s)"]}</td>
-                                <td className="border p-2">{row["Response Description"]}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
             </div>
         </div>
     );
