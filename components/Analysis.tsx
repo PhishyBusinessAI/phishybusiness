@@ -50,52 +50,59 @@ const Analysis = ({ callDetails }: { callDetails: CallDetails }) => {
 
     return (
         <>
-        <h3 className="text-xl font-semibold mb-4">Call Analysis</h3>
+        {!isLoading &&
         <div className="space-y-4">
-            <pre className="text-sm overflow-auto bg-gray-50 p-4 rounded-lg whitespace-pre-wrap">
+            <pre className="text-sm overflow-auto pr-4 rounded-lg whitespace-pre-wrap">
                 {/* {(aiResponse && JSON.stringify(aiResponse))|| "null"} */}
-                <div
-                style={{
-                    fontFamily: "Arial, sans-serif",
-                    padding: "15px",
-                    borderRadius: "10px",
-                    background: "#f9f9f9",
-                    border: "1px solid #ddd",
-                }}
-                >
-                <h2 className="font-bold">Phishing Analysis Report</h2>
+                <div className="relative flex items-start justify-between flex-col space-y-2">
+                    <h2 className=" text-lg underline">Phishing Analysis Report</h2>
+                    <div>
+                        <h3 className="text-[#000000]">Mistakes Made</h3>
+                        <ul>
+                            {aiResponse?.mistakes.map((m, index) => (
+                            <li key={index}>- {m}</li>
+                            ))}
+                        </ul>
+                    </div>
 
-                <h3 className="text-[#d9534f]">Mistakes Made</h3>
-                <ul>
-                    {aiResponse?.mistakes.map((m, index) => (
-                    <li key={index}>{m}</li>
-                    ))}
-                </ul>
+                    <div className="h-px bg-gray-400 w-full"></div>
 
-                <h3 className="text-[#f0ad4e]">Potential Risks</h3>
-                <ul>
-                    {aiResponse?.risks.map((r, index) => (
-                    <li key={index}>{r}</li>
-                    ))}
-                </ul>
+                    <div>
+                        <h3 className="text-[#000000]">Potential Risks</h3>
+                        <ul>
+                            {aiResponse?.risks.map((r, index) => (
+                            <li key={index}>- {r}</li>
+                            ))}
+                        </ul>
+                    </div>
 
-                <h3 className="text-[#5cb85c]">Best Practices</h3>
-                <ul>
-                    {aiResponse?.bestPractices.map((b, index) => (
-                    <li key={index}>{b}</li>
-                    ))}
-                </ul>
+                    <div className="h-px bg-gray-400 w-full"></div>
+
+                    <div>
+                        <h3 className="text-[#000000]">Best Practices</h3>
+                        <ul>
+                            {aiResponse?.bestPractices.map((b, index) => (
+                            <li key={index}>- {b}</li>
+                            ))}
+                        </ul>
+                    </div>
                 </div>
             </pre>
-            <button
-                onClick={() => getAnalysis(callDetails.transcript)}
-                // onClick={() => getAnalysis("Agent: Hello, is this Bob? \n User: Yes this is Bob, here is my social security number 994128442")}
+            {/* <button
+                // onClick={() => getAnalysis(callDetails.transcript)}
+                onClick={() => getAnalysis("Agent: Hello, is this Bob? \n User: Yes this is Bob, here is my social security number 994128442")}
                 disabled={isLoading}
                 className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
                 >
                 {isLoading ? "Analyzing..." : "Analyze Transcript"}
-            </button>
+            </button> */}
+        </div>}
+
+        {isLoading && 
+        <div>
+            <p>Analyzing</p>
         </div>
+        }
         </>
     );
 };
