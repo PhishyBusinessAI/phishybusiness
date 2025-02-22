@@ -2,21 +2,20 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import Select from "react-select";
 import Papa from "papaparse";
 
 const csvPath = "/synthetic_calls_scenarios.csv";
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
 
 export default function Analysis() {
-    const [scenarios, setScenarios] = useState<string[]>([]);
-    const [scenarioCounts, setScenarioCounts] = useState<number[]>([]);
-    const [callLengths, setCallLengths] = useState<number[]>([]);
-    const [responseCounts, setResponseCounts] = useState<Record<string, number>>({});
+    const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [scenarios, setScenarios] = useState<string[]>([]);
+    const [names, setNames] = useState<string[]>([]);
+    const [selectedScenarios, setSelectedScenarios] = useState<string[]>(["All"]);
+    const [selectedNames, setSelectedNames] = useState<string[]>(["All"]);
     const [selectedChart, setSelectedChart] = useState("Scenario Frequency");
-    const [scenarioFilter, setScenarioFilter] = useState(""); // Filter by Scenario
-    const [nameFilter, setNameFilter] = useState(""); // Filter by Name
-    const [data, setData] = useState<any[]>([]); // Store raw CSV data
 
     useEffect(() => {
         fetch(csvPath)
@@ -26,14 +25,14 @@ export default function Analysis() {
                     header: true,
                     skipEmptyLines: true,
                     complete: (results) => {
-                        setData(results.data); // Store the full data
+                        setData(results.data);
                         setLoading(false);
 
-                        // Extract unique scenarios for the dropdown
-                        const uniqueScenarios = [
-                            ...new Set(results.data.map((row: any) => row["Phishing Scenario"]))
-                        ];
+                        const uniqueScenarios = [...new Set(results.data.map((row: any) => row["Phishing Scenario"]))].filter(Boolean);
+                        const uniqueNames = [...new Set(results.data.map((row: any) => row["Name"]))].filter(Boolean);
+
                         setScenarios(uniqueScenarios);
+                        setNames(uniqueNames);
                     },
                 });
             })
@@ -43,47 +42,34 @@ export default function Analysis() {
             });
     }, []);
 
-    // Filter data based on scenario and name
     const filteredData = data.filter((row) => {
-        const matchesScenario = row["Phishing Scenario"]?.toLowerCase().includes(scenarioFilter.toLowerCase()) || scenarioFilter === "";
-        const matchesName = row["Name"]?.toLowerCase().includes(nameFilter.toLowerCase()) || nameFilter === "";
-        return matchesScenario && matchesName;
+        const scenarioMatch = selectedScenarios.includes("All") || selectedScenarios.includes(row["Phishing Scenario"]);
+        const nameMatch = selectedNames.includes("All") || selectedNames.includes(row["Name"]);
+        return scenarioMatch && nameMatch;
     });
 
-    // Recompute counts based on the filtered data
-    useEffect(() => {
-        const scenarioData: Record<string, number> = {};
-        const responseData: Record<string, number> = {};
-        const callLengthData: number[] = [];
+    const scenarioCounts = filteredData.reduce((acc: Record<string, number>, row) => {
+        const scenario = row["Phishing Scenario"];
+        acc[scenario] = (acc[scenario] || 0) + 1;
+        return acc;
+    }, {});
 
-        filteredData.forEach((row: any) => {
-            const scenario = row["Phishing Scenario"];
-            if (scenario) {
-                scenarioData[scenario] = (scenarioData[scenario] || 0) + 1;
-            }
+    const callLengths = filteredData.map(row => parseFloat(row["Call Length (s)"])).filter(n => !isNaN(n));
 
-            const response = row["Response Description"];
-            if (response) {
-                responseData[response] = (responseData[response] || 0) + 1;
-            }
+    const responseCounts = filteredData.reduce((acc: Record<string, number>, row) => {
+        const response = row["Response Description"];
+        acc[response] = (acc[response] || 0) + 1;
+        return acc;
+    }, {});
 
-            const callLength = parseFloat(row["Call Length (s)"]);
-            if (!isNaN(callLength)) {
-                callLengthData.push(callLength);
-            }
-        });
+    const scenarioOptions = [{ value: "All", label: "🌍 All Scenarios" }, ...scenarios.map((s) => ({ value: s, label: s }))];
+    const nameOptions = [{ value: "All", label: "👥 All Names" }, ...names.map((n) => ({ value: n, label: n }))];
 
-        setScenarios(Object.keys(scenarioData));
-        setScenarioCounts(Object.values(scenarioData));
-        setResponseCounts(responseData);
-        setCallLengths(callLengthData);
-    }, [filteredData]);
-
-    const charts = [
-        "Scenario Frequency",
-        "Call Length Distribution",
-        "Response Type Distribution",
-        "Top Responses"
+    const chartOptions = [
+        { value: "Scenario Frequency", label: "📈 Scenario Frequency" },
+        { value: "Call Length Distribution", label: "📞 Call Length Distribution" },
+        { value: "Response Type Distribution", label: "🎭 Response Type Distribution" },
+        { value: "Top Responses", label: "💬 Top Responses" },
     ];
 
     const renderChart = () => {
@@ -93,9 +79,9 @@ export default function Analysis() {
                     <Plot
                         data={[{
                             type: "bar",
-                            x: scenarios,
-                            y: scenarioCounts,
-                            marker: { color: ["#36A2EB", "#FF6384", "#FFCE56", "#4BC0C0"] },
+                            x: Object.keys(scenarioCounts),
+                            y: Object.values(scenarioCounts),
+                            marker: { color: "#36A2EB" },
                         }]}
                         layout={{
                             title: "📈 Scenario Frequency",
@@ -106,25 +92,11 @@ export default function Analysis() {
                     />
                 );
             case "Call Length Distribution":
-                const callLengthRanges = [
-                    { range: [0, 50], label: "0-50s" },
-                    { range: [50, 100], label: "50-100s" },
-                    { range: [100, 150], label: "100-150s" },
-                    { range: [150, 200], label: "150-200s" },
-                    { range: [200, 250], label: "200-250s" },
-                    { range: [250, Infinity], label: "250+s" }
-                ];
-
-                const callLengthDistribution = callLengthRanges.map((range) => {
-                    return callLengths.filter((length) => length >= range.range[0] && length < range.range[1]).length;
-                });
-
                 return (
                     <Plot
                         data={[{
-                            type: "bar",
-                            x: callLengthRanges.map(range => range.label),
-                            y: callLengthDistribution,
+                            type: "histogram",
+                            x: callLengths,
                             marker: { color: "#FF5733", opacity: 0.6 },
                         }]}
                         layout={{
@@ -168,56 +140,58 @@ export default function Analysis() {
                         }}
                     />
                 );
-            default:
-                return null;
         }
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-8 space-y-6">
-            <h1 className="text-3xl font-bold text-gray-800 mt-8">📊 Phishing Scenario Analysis</h1>
+        <div className="flex flex-col items-center min-h-screen bg-gray-100 p-8 space-y-6">
+            <h1 className="text-3xl font-bold text-gray-800 mt-10">📊 Phishing Scenario Analysis</h1>
 
-            {/* Filter Bar */}
-            <div className="flex space-x-6 mb-6 bg-white p-4 rounded-lg shadow-lg w-full max-w-4xl">
-                {/* Scenario Filter Dropdown */}
-                <select
-                    value={scenarioFilter}
-                    onChange={(e) => setScenarioFilter(e.target.value)}
-                    className="px-4 py-2 rounded-lg border border-gray-300 w-1/3"
-                >
-                    <option value="">Select a Scenario</option>
-                    {scenarios.map((scenario, index) => (
-                        <option key={index} value={scenario}>
-                            {scenario}
-                        </option>
-                    ))}
-                </select>
+            {/* Filters */}
+            <div className="w-full max-w-4xl bg-white p-4 rounded-xl shadow-lg flex flex-col space-y-4">
+                <div>
+                    <label className="block text-gray-700 font-semibold">Filter by Scenario:</label>
+                    <Select
+                        options={scenarioOptions}
+                        isMulti
+                        value={scenarioOptions.filter(opt => selectedScenarios.includes(opt.value))}
+                        placeholder="Select scenarios..."
+                        onChange={(selected) => {
+                            const values = selected.map(opt => opt.value);
+                            setSelectedScenarios(values.includes("All") ? ["All"] : values);
+                        }}
+                        className="mt-2"
+                    />
+                </div>
 
-                {/* Name Filter Input */}
-                <input
-                    type="text"
-                    placeholder="Filter by Name"
-                    value={nameFilter}
-                    onChange={(e) => setNameFilter(e.target.value)}
-                    className="px-4 py-2 rounded-lg border border-gray-300 w-1/3"
-                />
+                <div>
+                    <label className="block text-gray-700 font-semibold">Filter by Name:</label>
+                    <Select
+                        options={nameOptions}
+                        isMulti
+                        value={nameOptions.filter(opt => selectedNames.includes(opt.value))}
+                        placeholder="Select names..."
+                        onChange={(selected) => {
+                            const values = selected.map(opt => opt.value);
+                            setSelectedNames(values.includes("All") ? ["All"] : values);
+                        }}
+                        className="mt-2"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-gray-700 font-semibold">Select Chart:</label>
+                    <Select
+                        options={chartOptions}
+                        placeholder="Choose a chart..."
+                        onChange={(selected) => setSelectedChart(selected?.value || "Scenario Frequency")}
+                        className="mt-2"
+                    />
+                </div>
             </div>
 
-            {/* Chart Buttons */}
-            <div className="w-full max-w-4xl bg-white p-4 rounded-2xl shadow-lg flex justify-around">
-                {charts.map((chart) => (
-                    <button
-                        key={chart}
-                        onClick={() => setSelectedChart(chart)}
-                        className={`px-4 py-2 rounded-lg text-gray-700 font-semibold ${selectedChart === chart ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-                    >
-                        {chart}
-                    </button>
-                ))}
-            </div>
-
-            {/* Render Chart */}
-            <div className="w-full max-w-4xl bg-white p-6 rounded-2xl shadow-lg">
+            {/* Graph Display */}
+            <div className="w-full max-w-4xl bg-white p-6 rounded-xl shadow-lg">
                 {loading ? <p className="text-gray-500">Loading CSV data...</p> : renderChart()}
             </div>
         </div>

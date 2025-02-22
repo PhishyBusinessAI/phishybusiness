@@ -6,9 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="03e9ea0d-e4c1-433b-be9c-749c8dfe4d7f" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/analysis/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/analysis/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/analysis/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/data/page.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,7 +42,7 @@
     "Python.syntheticData.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "b4ab2931",
+    "git-widget-placeholder": "0b5e8970",
     "last_opened_file_path": "/Users/YehonatanMileguir/phishybusiness",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -132,7 +130,7 @@
                   <entry key="branch">
                     <value>
                       <list>
-                        <option value="Data-Vis" />
+                        <option value="origin/main" />
                       </list>
                     </value>
                   </entry>
