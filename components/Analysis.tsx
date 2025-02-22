@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface CallDetails {
     transcript: string;
@@ -18,6 +18,10 @@ const Analysis = ({ callDetails }: { callDetails: CallDetails }) => {
 
     const [isLoading, setIsLoading] = useState(false);
 
+    useEffect(() => {
+        getAnalysis(callDetails.transcript)
+    }, []);
+
     async function getAnalysis(transcript: string) {
         setIsLoading(true);
         try {
@@ -30,7 +34,7 @@ const Analysis = ({ callDetails }: { callDetails: CallDetails }) => {
         });
 
         const text = await response.text(); // Get the raw response text
-        // console.log(text)
+        console.log(text)
 
         if (response.ok) {
             const parsedOuter = JSON.parse(text); // First parse
@@ -101,7 +105,9 @@ const Analysis = ({ callDetails }: { callDetails: CallDetails }) => {
         {isLoading && 
         <div>
             <p>Analyzing</p>
+            
         </div>
+        
         }
         </>
     );
