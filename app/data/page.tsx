@@ -16,6 +16,8 @@ export default function Analysis() {
     const [selectedScenarios, setSelectedScenarios] = useState<string[]>(["All"]);
     const [selectedNames, setSelectedNames] = useState<string[]>(["All"]);
     const [selectedChart, setSelectedChart] = useState("Scenario Frequency");
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 10;
 
     useEffect(() => {
         fetch(csvPath)
@@ -28,8 +30,14 @@ export default function Analysis() {
                         setData(results.data);
                         setLoading(false);
 
-                        const uniqueScenarios = [...new Set(results.data.map((row: any) => row["Phishing Scenario"]))].filter(Boolean);
-                        const uniqueNames = [...new Set(results.data.map((row: any) => row["Name"]))].filter(Boolean);
+                        const uniqueScenarios = [
+                            ...new Set(
+                                results.data.map((row: any) => row["Phishing Scenario"])
+                            ),
+                        ].filter(Boolean);
+                        const uniqueNames = [
+                            ...new Set(results.data.map((row: any) => row["Name"])),
+                        ].filter(Boolean);
 
                         setScenarios(uniqueScenarios);
                         setNames(uniqueNames);
@@ -42,19 +50,33 @@ export default function Analysis() {
             });
     }, []);
 
+    // Filter data based on selected scenarios and names
     const filteredData = data.filter((row) => {
-        const scenarioMatch = selectedScenarios.includes("All") || selectedScenarios.includes(row["Phishing Scenario"]);
-        const nameMatch = selectedNames.includes("All") || selectedNames.includes(row["Name"]);
+        const scenarioMatch =
+            selectedScenarios.includes("All") ||
+            selectedScenarios.includes(row["Phishing Scenario"]);
+        const nameMatch =
+            selectedNames.includes("All") || selectedNames.includes(row["Name"]);
         return scenarioMatch && nameMatch;
     });
 
+    // Pagination logic
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    const paginatedData = filteredData.slice(
+        (currentPage - 1) * rowsPerPage,
+        currentPage * rowsPerPage
+    );
+
+    // Prepare chart data
     const scenarioCounts = filteredData.reduce((acc: Record<string, number>, row) => {
         const scenario = row["Phishing Scenario"];
         acc[scenario] = (acc[scenario] || 0) + 1;
         return acc;
     }, {});
 
-    const callLengths = filteredData.map(row => parseFloat(row["Call Length (s)"])).filter(n => !isNaN(n));
+    const callLengths = filteredData
+        .map((row) => parseFloat(row["Call Length (s)"]))
+        .filter((n) => !isNaN(n));
 
     const responseCounts = filteredData.reduce((acc: Record<string, number>, row) => {
         const response = row["Response Description"];
@@ -62,9 +84,15 @@ export default function Analysis() {
         return acc;
     }, {});
 
-    const scenarioOptions = [{ value: "All", label: "🌍 All Scenarios" }, ...scenarios.map((s) => ({ value: s, label: s }))];
-    const nameOptions = [{ value: "All", label: "👥 All Names" }, ...names.map((n) => ({ value: n, label: n }))];
-
+    // Convert options for react-select
+    const scenarioOptions = [
+        { value: "All", label: "🌍 All Scenarios" },
+        ...scenarios.map((s) => ({ value: s, label: s })),
+    ];
+    const nameOptions = [
+        { value: "All", label: "👥 All Names" },
+        ...names.map((n) => ({ value: n, label: n })),
+    ];
     const chartOptions = [
         { value: "Scenario Frequency", label: "📈 Scenario Frequency" },
         { value: "Call Length Distribution", label: "📞 Call Length Distribution" },
@@ -74,91 +102,119 @@ export default function Analysis() {
 
     const renderChart = () => {
         switch (selectedChart) {
-            case "Scenario Frequency":
-                // Ensure the keys (scenarios) and values (counts) match up
+            case "Scenario Frequency": {
                 const sortedScenarios = Object.keys(scenarioCounts).sort();
-                const sortedCounts = sortedScenarios.map(scenario => scenarioCounts[scenario] || 0);
-
+                const sortedCounts = sortedScenarios.map(
+                    (scenario) => scenarioCounts[scenario] || 0
+                );
                 return (
                     <Plot
-                        data={[{
-                            type: "bar",
-                            x: sortedScenarios, // Correctly mapped scenarios
-                            y: sortedCounts, // Correctly mapped counts
-                            marker: { color: "#36A2EB" },
-                        }]}
+                        data={[
+                            {
+                                type: "bar",
+                                x: sortedScenarios,
+                                y: sortedCounts,
+                                marker: { color: "#36A2EB" },
+                            },
+                        ]}
                         layout={{
                             title: "📈 Scenario Frequency",
                             xaxis: {
                                 title: "Scenario Type",
-                                tickangle: -45, // Rotate labels for better readability
-                            },
-                            yaxis: {
-                                title: "Count",
+                                tickangle: -45,
+                                showline: true,
+                                showgrid: true,
                                 zeroline: true,
                             },
+                            yaxis: { title: "Count", showline: true, showgrid: true, zeroline: true },
                             bargap: 0.3,
                         }}
                     />
                 );
-
+            }
             case "Call Length Distribution":
                 return (
                     <Plot
-                        data={[{
-                            type: "histogram",
-                            x: callLengths,
-                            marker: { color: "#FF5733", opacity: 0.6 },
-                        }]}
+                        data={[
+                            {
+                                type: "histogram",
+                                x: callLengths,
+                                marker: { color: "#FF5733", opacity: 0.6 },
+                            },
+                        ]}
                         layout={{
                             title: "📞 Call Length Distribution",
-                            xaxis: { title: "Call Length (seconds)" },
-                            yaxis: { title: "Frequency", zeroline: true },
+                            xaxis: {
+                                title: "Call Length (seconds)",
+                                showline: true,
+                                showgrid: true,
+                                zeroline: true,
+                            },
+                            yaxis: { title: "Frequency", showline: true, showgrid: true, zeroline: true },
                             bargap: 0.05,
                         }}
                     />
                 );
-
             case "Response Type Distribution":
                 return (
                     <Plot
-                        data={[{
-                            type: "pie",
-                            labels: Object.keys(responseCounts),
-                            values: Object.values(responseCounts),
-                            textinfo: "label+percent",
-                            marker: { colors: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0"] },
-                        }]}
+                        data={[
+                            {
+                                type: "pie",
+                                labels: Object.keys(responseCounts),
+                                values: Object.values(responseCounts),
+                                textinfo: "label+percent",
+                                marker: {
+                                    colors: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0"],
+                                },
+                            },
+                        ]}
                         layout={{ title: "🎭 Response Type Distribution" }}
                     />
                 );
-
             case "Top Responses":
                 return (
                     <Plot
-                        data={[{
-                            type: "bar",
-                            orientation: "h",
-                            x: Object.values(responseCounts),
-                            y: Object.keys(responseCounts),
-                            marker: { color: "#4BC0C0" },
-                            text: Object.values(responseCounts).map(String),
-                            textposition: "outside",
-                        }]}
+                        data={[
+                            {
+                                type: "bar",
+                                orientation: "h",
+                                x: Object.values(responseCounts),
+                                y: Object.keys(responseCounts),
+                                marker: { color: "#4BC0C0" },
+                                text: Object.values(responseCounts).map(String),
+                                textposition: "outside",
+                            },
+                        ]}
                         layout={{
                             title: "💬 Top Response Types",
-                            xaxis: { title: "Count" },
-                            yaxis: { title: "Response Type", automargin: true },
+                            xaxis: {
+                                title: "Count",
+                                showline: true,
+                                showgrid: true,
+                                zeroline: true,
+                            },
+                            yaxis: {
+                                title: "Response Type",
+                                automargin: true,
+                                showline: true,
+                                showgrid: true,
+                                zeroline: true,
+                            },
                             margin: { l: 250 },
                         }}
                     />
                 );
+            default:
+                return null;
         }
     };
 
     return (
         <div className="flex flex-col items-center min-h-screen bg-gray-100 p-8 space-y-6">
-            <h1 className="text-3xl font-bold text-gray-800 mt-10">📊 Phishing Scenario Analysis</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mt-10">
+                📊 Phishing Scenario Analysis
+            </h1>
 
             {/* Filters */}
             <div className="w-full max-w-4xl bg-white p-4 rounded-xl shadow-lg flex flex-col space-y-4">
@@ -166,10 +222,10 @@ export default function Analysis() {
                 <Select
                     options={scenarioOptions}
                     isMulti
-                    value={scenarioOptions.filter(opt => selectedScenarios.includes(opt.value))}
+                    value={scenarioOptions.filter((opt) => selectedScenarios.includes(opt.value))}
                     placeholder="Select scenarios..."
                     onChange={(selected) => {
-                        const values = selected.map(opt => opt.value);
+                        const values = selected.map((opt) => opt.value);
                         setSelectedScenarios(values.includes("All") ? ["All"] : values);
                     }}
                     className="mt-2"
@@ -179,10 +235,10 @@ export default function Analysis() {
                 <Select
                     options={nameOptions}
                     isMulti
-                    value={nameOptions.filter(opt => selectedNames.includes(opt.value))}
+                    value={nameOptions.filter((opt) => selectedNames.includes(opt.value))}
                     placeholder="Select names..."
                     onChange={(selected) => {
-                        const values = selected.map(opt => opt.value);
+                        const values = selected.map((opt) => opt.value);
                         setSelectedNames(values.includes("All") ? ["All"] : values);
                     }}
                     className="mt-2"
@@ -192,17 +248,23 @@ export default function Analysis() {
                 <Select
                     options={chartOptions}
                     placeholder="Choose a chart..."
-                    onChange={(selected) => setSelectedChart(selected?.value || "Scenario Frequency")}
+                    onChange={(selected) =>
+                        setSelectedChart(selected?.value || "Scenario Frequency")
+                    }
                     className="mt-2"
                 />
             </div>
 
             {/* Graph */}
             <div className="w-full max-w-4xl bg-white p-6 rounded-xl shadow-lg">
-                {loading ? <p className="text-gray-500">Loading CSV data...</p> : renderChart()}
+                {loading ? (
+                    <p className="text-gray-500">Loading CSV data...</p>
+                ) : (
+                    renderChart()
+                )}
             </div>
 
-            {/* Table */}
+            {/* Paginated Table */}
             <div className="w-full max-w-4xl bg-white p-6 rounded-xl shadow-lg">
                 <h2 className="text-lg font-semibold mb-2">📋 Filtered Data</h2>
                 <div className="overflow-x-auto">
@@ -216,7 +278,7 @@ export default function Analysis() {
                         </tr>
                         </thead>
                         <tbody>
-                        {filteredData.map((row, index) => (
+                        {paginatedData.map((row, index) => (
                             <tr key={index} className="border text-black">
                                 <td className="border p-2">{row["Name"]}</td>
                                 <td className="border p-2">{row["Phishing Scenario"]}</td>
@@ -226,6 +288,36 @@ export default function Analysis() {
                         ))}
                         </tbody>
                     </table>
+                </div>
+                {/* Pagination Controls */}
+                <div className="flex justify-between items-center mt-4">
+                    <button
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className={`px-4 py-2 text-white rounded ${
+                            currentPage === 1
+                                ? "bg-gray-400"
+                                : "bg-blue-500 hover:bg-blue-700"
+                        }`}
+                    >
+                        ◀ Previous
+                    </button>
+                    <span className="text-gray-700">
+            Page {currentPage} of {totalPages}
+          </span>
+                    <button
+                        onClick={() =>
+                            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                        }
+                        disabled={currentPage === totalPages}
+                        className={`px-4 py-2 text-white rounded ${
+                            currentPage === totalPages
+                                ? "bg-gray-400"
+                                : "bg-blue-500 hover:bg-blue-700"
+                        }`}
+                    >
+                        Next ▶
+                    </button>
                 </div>
             </div>
         </div>
