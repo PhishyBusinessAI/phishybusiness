@@ -13,7 +13,6 @@ import {
 } from "recharts";
 
 import StatsSection from "@/components/StatsSection";
-import Navigation from "@/components/Navigation";
 const data = [
   { year: "2019", value: 1.5 },
   { year: "2020", value: 2.1 },
