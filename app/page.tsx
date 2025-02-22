@@ -1,220 +1,431 @@
 "use client";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Shield, Phone, UserCheck, ChevronDown } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
-import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
-import Select from "react-select";
-import Papa from "papaparse";
+import StatsSection from "@/components/StatsSection";
+const data = [
+  { year: "2019", value: 1.5 },
+  { year: "2020", value: 2.1 },
+  { year: "2021", value: 2.8 },
+  { year: "2022", value: 3.3 },
+  { year: "2023", value: 3.9 },
+];
+export default function Home() {
+  const [userName, setUserName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [callDetails, setCallDetails] = useState<any>(null);
 
-const csvPath = "/synthetic_calls_scenarios.csv";
-const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
+  async function callUser() {
+    setError(null);
+    setSuccess(false);
+    setCallDetails(null);
 
-export default function Analysis() {
-    const [data, setData] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [scenarios, setScenarios] = useState<string[]>([]);
-    const [names, setNames] = useState<string[]>([]);
-    const [selectedScenarios, setSelectedScenarios] = useState<string[]>(["All"]);
-    const [selectedNames, setSelectedNames] = useState<string[]>(["All"]);
-    const [selectedChart, setSelectedChart] = useState("Scenario Frequency");
+    if (!userName.trim()) {
+      setError("Please enter your name");
+      return;
+    }
+    if (!phoneNumber.match(/^\+1\d{10}$/)) {
+      setError("Please enter a valid phone number (+1 followed by 10 digits)");
+      return;
+    }
 
-    useEffect(() => {
-        fetch(csvPath)
-            .then((response) => response.text())
-            .then((csvText) => {
-                Papa.parse(csvText, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: (results) => {
-                        setData(results.data);
-                        setLoading(false);
-
-                        const uniqueScenarios = [...new Set(results.data.map((row: any) => row["Phishing Scenario"]))].filter(Boolean);
-                        const uniqueNames = [...new Set(results.data.map((row: any) => row["Name"]))].filter(Boolean);
-
-                        setScenarios(uniqueScenarios);
-                        setNames(uniqueNames);
-                    },
-                });
-            })
-            .catch((error) => {
-                console.error("Error loading CSV:", error);
-                setLoading(false);
-            });
-    }, []);
-
-    const filteredData = data.filter((row) => {
-        const scenarioMatch = selectedScenarios.includes("All") || selectedScenarios.includes(row["Phishing Scenario"]);
-        const nameMatch = selectedNames.includes("All") || selectedNames.includes(row["Name"]);
-        return scenarioMatch && nameMatch;
-    });
-
-    const scenarioCounts = filteredData.reduce((acc: Record<string, number>, row) => {
-        const scenario = row["Phishing Scenario"];
-        acc[scenario] = (acc[scenario] || 0) + 1;
-        return acc;
-    }, {});
-
-    const callLengths = filteredData.map(row => parseFloat(row["Call Length (s)"])).filter(n => !isNaN(n));
-
-    const responseCounts = filteredData.reduce((acc: Record<string, number>, row) => {
-        const response = row["Response Description"];
-        acc[response] = (acc[response] || 0) + 1;
-        return acc;
-    }, {});
-
-    const scenarioOptions = [{ value: "All", label: "🌍 All Scenarios" }, ...scenarios.map((s) => ({ value: s, label: s }))];
-    const nameOptions = [{ value: "All", label: "👥 All Names" }, ...names.map((n) => ({ value: n, label: n }))];
-
-    const chartOptions = [
-        { value: "Scenario Frequency", label: "📈 Scenario Frequency" },
-        { value: "Call Length Distribution", label: "📞 Call Length Distribution" },
-        { value: "Response Type Distribution", label: "🎭 Response Type Distribution" },
-        { value: "Top Responses", label: "💬 Top Responses" },
-    ];
-
-    const renderChart = () => {
-        switch (selectedChart) {
-            case "Scenario Frequency":
-                return (
-                    <Plot
-                        data={[{
-                            type: "bar",
-                            x: Object.keys(scenarioCounts),
-                            y: Object.values(scenarioCounts),
-                            marker: { color: "#36A2EB" },
-                        }]}
-                        layout={{
-                            title: "📈 Scenario Frequency",
-                            xaxis: { title: "Scenario Type" },
-                            yaxis: { title: "Count" },
-                            bargap: 0.3,
-                        }}
-                    />
-                );
-            case "Call Length Distribution":
-                return (
-                    <Plot
-                        data={[{
-                            type: "histogram",
-                            x: callLengths,
-                            marker: { color: "#FF5733", opacity: 0.6 },
-                        }]}
-                        layout={{
-                            title: "📞 Call Length Distribution",
-                            xaxis: { title: "Call Length (s)" },
-                            yaxis: { title: "Frequency" },
-                            bargap: 0.05,
-                        }}
-                    />
-                );
-            case "Response Type Distribution":
-                return (
-                    <Plot
-                        data={[{
-                            type: "pie",
-                            labels: Object.keys(responseCounts),
-                            values: Object.values(responseCounts),
-                            textinfo: "label+percent",
-                            marker: { colors: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0"] },
-                        }]}
-                        layout={{ title: "🎭 Response Type Distribution" }}
-                    />
-                );
-            case "Top Responses":
-                return (
-                    <Plot
-                        data={[{
-                            type: "bar",
-                            orientation: "h",
-                            x: Object.values(responseCounts),
-                            y: Object.keys(responseCounts),
-                            marker: { color: "#4BC0C0" },
-                            text: Object.values(responseCounts).map(String),
-                            textposition: "outside",
-                        }]}
-                        layout={{
-                            title: "💬 Top Response Types",
-                            xaxis: { title: "Count" },
-                            yaxis: { title: "Response Type", automargin: true },
-                            margin: { l: 250 },
-                        }}
-                    />
-                );
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        "https://api.retellai.com/v2/create-phone-call",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_RETELL_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from_number: "+16509999723",
+            to_number: phoneNumber,
+            override_agent_id: "agent_7a7a2fff71b3119b46a4afa692",
+            retell_llm_dynamic_variables: {
+              user_name: userName,
+            },
+            webhook_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhook`,
+          }),
         }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to initiate call");
+      }
+      setSuccess(true);
+      console.log("Call initiated:", data);
+
+      pollCallStatus(data.call_id);
+    } catch (error) {
+      console.error("Error making call:", error);
+      setError("Failed to initiate call. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const pollCallStatus = async (callId: string) => {
+    const checkStatus = async () => {
+      try {
+        const response = await fetch(
+          `https://api.retellai.com/v2/get-call/${callId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.NEXT_PUBLIC_RETELL_API_KEY}`,
+            },
+          }
+        );
+        const data = await response.json();
+
+        if (data.call_status === "ended") {
+          setCallDetails(data);
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error checking call status:", error);
+        return true;
+      }
     };
 
-    return (
-        <div className="flex flex-col items-center min-h-screen bg-gray-100 p-8 space-y-6">
-            <h1 className="text-3xl font-bold text-gray-800 mt-10">📊 Phishing Scenario Analysis</h1>
+    const pollInterval = setInterval(async () => {
+      const shouldStop = await checkStatus();
+      if (shouldStop) {
+        clearInterval(pollInterval);
+      }
+    }, 5000);
 
-            {/* Filters */}
-            <div className="w-full max-w-4xl bg-white p-4 rounded-xl shadow-lg flex flex-col space-y-4">
-                <label className="block text-gray-700 font-semibold">Filter by Scenario:</label>
-                <Select
-                    options={scenarioOptions}
-                    isMulti
-                    value={scenarioOptions.filter(opt => selectedScenarios.includes(opt.value))}
-                    placeholder="Select scenarios..."
-                    onChange={(selected) => {
-                        const values = selected.map(opt => opt.value);
-                        setSelectedScenarios(values.includes("All") ? ["All"] : values);
-                    }}
-                    className="mt-2"
-                />
+    setTimeout(() => clearInterval(pollInterval), 30 * 60 * 1000);
+  };
 
-                <label className="block text-gray-700 font-semibold">Filter by Name:</label>
-                <Select
-                    options={nameOptions}
-                    isMulti
-                    value={nameOptions.filter(opt => selectedNames.includes(opt.value))}
-                    placeholder="Select names..."
-                    onChange={(selected) => {
-                        const values = selected.map(opt => opt.value);
-                        setSelectedNames(values.includes("All") ? ["All"] : values);
-                    }}
-                    className="mt-2"
-                />
+  return (
+    <div className="min-h-screen ">
+      <main className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <span className="px-4 py-1.5 text-sm font-medium rounded-full bg-blue-50 text-blue-600 inline-block border border-blue-100 shadow-[0_0_15px_rgba(37,99,235,0.2)]">
+              Protect Your Loved Ones
+            </span>
+            <h1 className="text-4xl md:text-6xl font-bold mt-6 bg-gradient-to-r from-gray-900 via-blue-800 to-gray-900 bg-clip-text text-transparent leading-[1.1] md:leading-[1.2] pb-1">
+              Defending Against Phone Scams
+            </h1>
+            <p className="text-lg mt-4 max-w-2xl mx-auto text-gray-600">
+              Every year, thousands of people fall victim to phone scams. We're
+              here to help protect your loved ones through education and
+              awareness.
+            </p>
+          </motion.div>
 
-                <label className="block text-gray-700 font-semibold">Select Chart:</label>
-                <Select
-                    options={chartOptions}
-                    placeholder="Choose a chart..."
-                    onChange={(selected) => setSelectedChart(selected?.value || "Scenario Frequency")}
-                    className="mt-2"
-                />
-            </div>
-
-            {/* Graph */}
-            <div className="w-full max-w-4xl bg-white p-6 rounded-xl shadow-lg">
-                {loading ? <p className="text-gray-500">Loading CSV data...</p> : renderChart()}
-            </div>
-
-            {/* Table */}
-            <div className="w-full max-w-4xl bg-white p-6 rounded-xl shadow-lg">
-                <h2 className="text-lg font-semibold mb-2">📋 Filtered Data</h2>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white border border-gray-300 text-black">
-                        <thead>
-                        <tr className="bg-gray-200 text-black">
-                            <th className="border p-2">Name</th>
-                            <th className="border p-2">Scenario</th>
-                            <th className="border p-2">Call Length (s)</th>
-                            <th className="border p-2">Response</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {filteredData.map((row, index) => (
-                            <tr key={index} className="border text-black">
-                                <td className="border p-2">{row["Name"]}</td>
-                                <td className="border p-2">{row["Phishing Scenario"]}</td>
-                                <td className="border p-2">{row["Call Length (s)"]}</td>
-                                <td className="border p-2">{row["Response Description"]}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
+          <div className="grid lg:grid-cols-2 gap-12 items-start mb-16">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="relative p-8 rounded-2xl border border-gray-200 bg-white/50 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300"
+            >
+              <div className="absolute inset-0 rounded-2xl"></div>
+              <div className="relative flex flex-col gap-6">
+                <div>
+                  <label
+                    htmlFor="name"
+                    className="block text-sm font-medium mb-2"
+                  >
+                    Your Name
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    placeholder="Enter your name"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-black focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200"
+                  />
                 </div>
+
+                <div>
+                  <label
+                    htmlFor="phone"
+                    className="block text-sm font-medium mb-2"
+                  >
+                    Phone Number
+                  </label>
+                  <input
+                    id="phone"
+                    type="tel"
+                    placeholder="Enter phone number (+1XXXXXXXXXX)"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-black focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200"
+                  />
+                  <p className="mt-2 text-sm text-gray-500">
+                    Format: +1 followed by your 10-digit number
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="relationship"
+                    className="block text-sm font-medium mb-2"
+                  >
+                    Relationship to Person
+                  </label>
+                  <select
+                    id="relationship"
+                    className="w-full px-4 py-3 rounded-lg border border-black focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200"
+                  >
+                    <option value="">Select relationship</option>
+                    <option value="family">Family Member</option>
+                    <option value="friend">Friend</option>
+                    <option value="caregiver">Caregiver</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+                {success && !callDetails && (
+                  <div className="mt-4 w-full">
+                    <div className="inline-flex items-center px-4 py-2 rounded-full bg-green-50 border border-green-100 shadow-sm w-full animate-pulse">
+                      <div className="flex items-center w-full">
+                        <div className="animate-pulse mr-2 h-2 w-2 rounded-full bg-green-500"></div>
+                        <p className="text-green-700 text-sm font-medium">
+                          Call in progress. A detailed analysis will be provided
+                          once completed.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={() => callUser()}
+                  disabled={isLoading}
+                  className="w-full px-4 py-3 mt-4 rounded-lg transition-colors duration-200 bg-black text-white hover:bg-black/90 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isLoading ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Initiating Call...
+                    </>
+                  ) : (
+                    "Start Educational Call"
+                  )}
+                </button>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              {!callDetails ? (
+                <motion.div
+                  initial={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  animate={{ opacity: !callDetails ? 1 : 0 }}
+                >
+                  <StatsSection />
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="p-6 rounded-2xl border border-gray-200 bg-white/50 backdrop-blur-sm shadow-xl"
+                >
+                  <h3 className="text-xl font-semibold mb-4">Call Analysis</h3>
+                  <div className="space-y-4">
+                    <pre className="text-sm overflow-auto bg-gray-50 p-4 rounded-lg">
+                      {JSON.stringify(callDetails, null, 2)}
+                    </pre>
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          </div>
+          <div className="h-[400px] p-6 rounded-xl border border-gray-200">
+            <h3 className="text-xl font-semibold mb-4 text-center">
+              Phone Scam Reports (Millions)
+            </h3>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={data}
+                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+                <XAxis dataKey="year" stroke="rgba(0,0,0,0.6)" />
+                <YAxis stroke="rgba(0,0,0,0.6)" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "white",
+                    border: "1px solid rgba(0,0,0,0.1)",
+                    borderRadius: "8px",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#0066FF"
+                  strokeWidth={2}
+                  dot={{ fill: "#0066FF", r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <section className="grid md:grid-cols-3 gap-8 mb-16"></section>
+
+          <section className="w-full max-w-5xl mx-auto mt-24">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-4">
+                Frequently Asked Questions
+              </h2>
+              <p className="text-gray-600">
+                Everything you need to know about our scam prevention service
+              </p>
             </div>
+
+            <div className="space-y-4">
+              <div className="border border-gray-200 rounded-lg">
+                <button
+                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors duration-200"
+                  onClick={() => setOpenFaq(openFaq === 1 ? null : 1)}
+                >
+                  <span className="text-lg font-medium">
+                    Is this service free?
+                  </span>
+                  <motion.span
+                    animate={{ rotate: openFaq === 1 ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-5 h-5 text-gray-500" />
+                  </motion.span>
+                </button>
+                <motion.div
+                  initial={false}
+                  animate={{
+                    height: openFaq === 1 ? "auto" : 0,
+                    opacity: openFaq === 1 ? 1 : 0,
+                  }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-6 pb-4 text-gray-600 mt-3">
+                    Yes, our educational scam prevention service is completely
+                    free. We believe everyone deserves to be protected from
+                    phone scams, which is why we've made this service accessible
+                    to all.
+                  </div>
+                </motion.div>
+              </div>
+
+              <div className="border border-gray-200 rounded-lg">
+                <button
+                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors duration-200"
+                  onClick={() => setOpenFaq(openFaq === 2 ? null : 2)}
+                >
+                  <span className="text-lg font-medium">How does it work?</span>
+                  <motion.span
+                    animate={{ rotate: openFaq === 2 ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-5 h-5 text-gray-500" />
+                  </motion.span>
+                </button>
+                <motion.div
+                  initial={false}
+                  animate={{
+                    height: openFaq === 2 ? "auto" : 0,
+                    opacity: openFaq === 2 ? 1 : 0,
+                  }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-6 pb-4 text-gray-600 mt-3">
+                    We make a controlled, educational call that simulates common
+                    scam tactics. During and after the call, we provide guidance
+                    on identifying red flags and best practices for handling
+                    suspicious calls. This hands-on approach helps build
+                    practical experience in a safe environment.
+                  </div>
+                </motion.div>
+              </div>
+
+              <div className="border border-gray-200 rounded-lg">
+                <button
+                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors duration-200"
+                  onClick={() => setOpenFaq(openFaq === 3 ? null : 3)}
+                >
+                  <span className="text-lg font-medium">
+                    Is my information secure?
+                  </span>
+                  <motion.span
+                    animate={{ rotate: openFaq === 3 ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-5 h-5 text-gray-500" />
+                  </motion.span>
+                </button>
+                <motion.div
+                  initial={false}
+                  animate={{
+                    height: openFaq === 3 ? "auto" : 0,
+                    opacity: openFaq === 3 ? 1 : 0,
+                  }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-6 pb-4 text-gray-600 mt-3">
+                    Absolutely. We take data privacy seriously. Your personal
+                    information is encrypted and never shared with third
+                    parties. We only use your contact details for the
+                    educational call you requested.
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </section>
         </div>
-    );
+      </main>
+    </div>
+  );
 }
