@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import Select from "react-select";
 import Papa from "papaparse";
 
 const csvPath = "/synthetic_calls_scenarios.csv";
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
+const SelectComponent = dynamic(() => import("react-select"), { ssr: false });
 
 export default function Analysis() {
     const [data, setData] = useState<any[]>([]);
@@ -219,7 +219,7 @@ export default function Analysis() {
             {/* Filters */}
             <div className="w-full max-w-4xl bg-white p-4 rounded-xl shadow-lg flex flex-col space-y-4">
                 <label className="block text-gray-700 font-semibold">Filter by Scenario:</label>
-                <Select
+                <SelectComponent
                     options={scenarioOptions}
                     isMulti
                     value={scenarioOptions.filter((opt) => selectedScenarios.includes(opt.value))}
@@ -232,7 +232,7 @@ export default function Analysis() {
                 />
 
                 <label className="block text-gray-700 font-semibold">Filter by Name:</label>
-                <Select
+                <SelectComponent
                     options={nameOptions}
                     isMulti
                     value={nameOptions.filter((opt) => selectedNames.includes(opt.value))}
@@ -245,7 +245,7 @@ export default function Analysis() {
                 />
 
                 <label className="block text-gray-700 font-semibold">Select Chart:</label>
-                <Select
+                <SelectComponent
                     options={chartOptions}
                     placeholder="Choose a chart..."
                     onChange={(selected) =>
@@ -303,8 +303,8 @@ export default function Analysis() {
                         ◀ Previous
                     </button>
                     <span className="text-gray-700">
-            Page {currentPage} of {totalPages}
-          </span>
+                        Page {currentPage} of {totalPages}
+                    </span>
                     <button
                         onClick={() =>
                             setCurrentPage((prev) => Math.min(prev + 1, totalPages))
