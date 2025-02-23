@@ -19,33 +19,34 @@ const Analysis = ({ callDetails }: { callDetails: CallDetails }) => {
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        getAnalysis(callDetails.transcript)
+        console.log("we are in the useeffect again")
+        getAnalysis(callDetails.transcript);
     }, []);
 
     async function getAnalysis(transcript: string) {
         setIsLoading(true);
         try {
-        const response = await fetch("/api/webhook/new_gpt", {
-            method: "POST",
-            headers: {
-            "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ transcript }),
-        });
+            const response = await fetch("/api", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ transcript }),
+            });
 
-        const text = await response.text(); // Get the raw response text
-        console.log(text)
+            const text = await response.text(); // Get the raw response text
+            console.log(text)
 
-        if (response.ok) {
-            const parsedOuter = JSON.parse(text); // First parse
-            const jsonData: PhishingAnalysis = JSON.parse(parsedOuter.response);
-            setAIResponse(jsonData);
-        } else {
-            setAIResponse({ mistakes: [], risks: [], bestPractices: [] });
-        }
+            if (response.ok) {
+                const parsedOuter = JSON.parse(text); // First parse
+                const jsonData: PhishingAnalysis = JSON.parse(parsedOuter.response);
+                setAIResponse(jsonData);
+            } else {
+                setAIResponse({ mistakes: [], risks: [], bestPractices: [] });
+            }
         } catch (error) {
-        console.error("Error generating analysis:", error);
-        setAIResponse({ mistakes: [], risks: [], bestPractices: [] });
+            console.error("Error generating analysis:", error);
+            setAIResponse({ mistakes: [], risks: [], bestPractices: [] });
         } finally {
             setIsLoading(false);
         }
@@ -54,45 +55,45 @@ const Analysis = ({ callDetails }: { callDetails: CallDetails }) => {
 
     return (
         <>
-        {!isLoading &&
-        <div className="space-y-4">
-            <pre className="text-sm overflow-auto pr-4 rounded-lg whitespace-pre-wrap">
-                {/* {(aiResponse && JSON.stringify(aiResponse))|| "null"} */}
-                <div className="relative flex items-start justify-between flex-col space-y-2">
-                    <h2 className=" text-lg underline">Phishing Analysis Report</h2>
-                    <div>
-                        <h3 className="text-[#000000]">Mistakes Made</h3>
-                        <ul>
-                            {aiResponse?.mistakes.map((m, index) => (
-                            <li key={index}>- {m}</li>
-                            ))}
-                        </ul>
-                    </div>
+            {!isLoading &&
+                <div className="space-y-4">
+                    <pre className="text-sm overflow-auto pr-4 rounded-lg whitespace-pre-wrap">
+                        {/* {(aiResponse && JSON.stringify(aiResponse))|| "null"} */}
+                        <div className="relative flex items-start justify-between flex-col space-y-2">
+                            <h2 className=" text-lg underline">Phishing Analysis Report</h2>
+                            <div>
+                                <h3 className="text-[#000000]">Mistakes Made</h3>
+                                <ul>
+                                    {aiResponse?.mistakes.map((m, index) => (
+                                        <li key={index}>- {m}</li>
+                                    ))}
+                                </ul>
+                            </div>
 
-                    <div className="h-px bg-gray-400 w-full"></div>
+                            <div className="h-px bg-gray-400 w-full"></div>
 
-                    <div>
-                        <h3 className="text-[#000000]">Potential Risks</h3>
-                        <ul>
-                            {aiResponse?.risks.map((r, index) => (
-                            <li key={index}>- {r}</li>
-                            ))}
-                        </ul>
-                    </div>
+                            <div>
+                                <h3 className="text-[#000000]">Potential Risks</h3>
+                                <ul>
+                                    {aiResponse?.risks.map((r, index) => (
+                                        <li key={index}>- {r}</li>
+                                    ))}
+                                </ul>
+                            </div>
 
-                    <div className="h-px bg-gray-400 w-full"></div>
+                            <div className="h-px bg-gray-400 w-full"></div>
 
-                    <div>
-                        <h3 className="text-[#000000]">Best Practices</h3>
-                        <ul>
-                            {aiResponse?.bestPractices.map((b, index) => (
-                            <li key={index}>- {b}</li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-            </pre>
-            {/* <button
+                            <div>
+                                <h3 className="text-[#000000]">Best Practices</h3>
+                                <ul>
+                                    {aiResponse?.bestPractices.map((b, index) => (
+                                        <li key={index}>- {b}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </pre>
+                    {/* <button
                 // onClick={() => getAnalysis(callDetails.transcript)}
                 onClick={() => getAnalysis("Agent: Hello, is this Bob? \n User: Yes this is Bob, here is my social security number 994128442")}
                 disabled={isLoading}
@@ -100,15 +101,15 @@ const Analysis = ({ callDetails }: { callDetails: CallDetails }) => {
                 >
                 {isLoading ? "Analyzing..." : "Analyze Transcript"}
             </button> */}
-        </div>}
+                </div>}
 
-        {isLoading && 
-        <div>
-            <p>Analyzing</p>
-            
-        </div>
-        
-        }
+            {isLoading &&
+                <div>
+                    <p>Analyzing</p>
+
+                </div>
+
+            }
         </>
     );
 };
